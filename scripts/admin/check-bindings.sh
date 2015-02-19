@@ -139,8 +139,8 @@ for lang in $SUPPORTED_LANGUAGES; do
 	rm -f CMakeCache.txt
 	opt_flags=""
 	if [[ "$TRAVIS_WITH_INTEGRATION_TESTS" ]]; then
-	    # turn off optimizations to fit into travis memory limits
-	    opt_flags="-DCMAKE_CXX_FLAGS='-O0' -DCMAKE_C_FLAGS='-O0'"
+	    # turn off optimizations and force use of clang to fit into travis memory limits
+	    opt_flags="-DCMAKE_CXX_FLAGS='-O0' -DCMAKE_C_FLAGS='-O0' -DCMAKE_C_COMPILER='clang' -DCMAKE_CXX_COMPILER='clang++'"
 	fi
 	cmake -DCREATE_$lang=TRUE $opt_flags $lang_flags $search_path $YARP_ROOT/bindings > result.txt 2>&1
 	set -e
@@ -160,6 +160,7 @@ for lang in $SUPPORTED_LANGUAGES; do
 	    exit 1
 	}
 	echo "Running make"
+	make VERBOSE=1
 	{
 	    make VERBOSE=1 || { 
 		echo "make failed for $lang $swig_ver" >> $log
