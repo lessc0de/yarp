@@ -34,6 +34,7 @@ using namespace yarp::dev;
 
 extern DriverCreator *createRemoteControlBoard();
 extern DriverCreator *createServerControlBoard();
+extern DriverCreator *createClientControlBoard();
 extern DriverCreator *createAnalogSensorClient();
 extern DriverCreator *createAnalogWrapper();
 extern DriverCreator *createControlBoardWrapper();
@@ -76,6 +77,7 @@ void Drivers::init() {
     add(createServerInertial());
     add(createRemoteControlBoard());
     add(createServerControlBoard());
+    add(createClientControlBoard());
     add(createAnalogSensorClient());
     add(createAnalogWrapper());
     add(createControlBoardWrapper());
