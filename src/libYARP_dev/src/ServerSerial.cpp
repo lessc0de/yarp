@@ -10,16 +10,29 @@
 
 
 ServerSerial::ServerSerial() :
+        RateThread(10),
         verb(false),
         serial(NULL),
         callback_impl(this)
 {
 }
 
-
 ServerSerial::~ServerSerial()
 {
     closeMain();
+}
+
+bool ServerSerial::closeMain()
+{
+    if (isRunning()) {
+        askToStop();
+    }
+
+    //close the port connection here
+    toDevice.close();
+    fromDevice.close();
+    poly.close();
+    return true;
 }
 
 bool ServerSerial::send(const Bottle& msg)
@@ -83,11 +96,13 @@ int ServerSerial::receiveLine(char* line, const int MaxLineLength)
         return -1;
 }
 
-bool ServerSerial::open()  {
+bool ServerSerial::open()
+{
     return false;
 }
 
-bool ServerSerial::close() {
+bool ServerSerial::close()
+{
     return closeMain();
 }
 
@@ -136,14 +151,11 @@ bool ServerSerial::open(Searchable& prop)
     toDevice.open((rootName+"/in").c_str());
     fromDevice.open((rootName+"/out").c_str());
 
-
-
     if (poly.isValid())
         poly.view(serial);
 
     if(serial != NULL) {
-        start();
-        return true;
+        return start();
     }
 
     printf("subdevice <%s> doesn't look like a serial port (no appropriate interfaces were acquired)\n",
@@ -152,39 +164,41 @@ bool ServerSerial::open(Searchable& prop)
     return false;
 }
 
-void ServerSerial::run() {
+bool ServerSerial::threadInit()
+{
     printf("Server Serial starting\n");
-    //double before, now;
-    while (!isStopping()) {
-        //before = Time::now();
-        Bottle& b = reply_buffer.get();
-        b.clear();
-        receive( b );
-        /*if(b.size() > 0)*/ /* this line was creating a memory leak !! */
-        reply_buffer.write();
-        //now = Time::now();
-        // give other threads the chance to run
-        yarp::os::Time::delay(0.010);
-    }
+    return true;
+}
+
+void ServerSerial::run()
+{
+    Bottle& b = reply_buffer.get();
+    b.clear();
+    receive( b );
+    /*if(b.size() > 0)*/ /* this line was creating a memory leak !! */
+    reply_buffer.write();    
+}
+
+void ServerSerial::threadRelease()
+{
     printf("Server Serial stopping\n");
 }
 
 
+
 // ImplementCallbackHelper class.
-
-
-yarp::dev::ImplementCallbackHelper2::ImplementCallbackHelper2(yarp::dev::ServerSerial *x) {
+yarp::dev::ImplementCallbackHelper2::ImplementCallbackHelper2(yarp::dev::ServerSerial *x)
+{
     ser = dynamic_cast<yarp::dev::ISerialDevice *> (x);
     //ACE_ASSERT (ser != 0);
     if (ser==0) {
         printf("Could not get serial device\n");
         exit(1);
     }
-
-
 }
 
-void yarp::dev::ImplementCallbackHelper2::onRead(Bottle &b) {
+void yarp::dev::ImplementCallbackHelper2::onRead(Bottle &b)
+{
     //printf("Data received on the control channel of size: %d\n", v.body.size());
     //    int i;
    if (ser) {
@@ -193,3 +207,4 @@ void yarp::dev::ImplementCallbackHelper2::onRead(Bottle &b) {
             printf("Problems while trying to send data\n");
     }
 }
+
