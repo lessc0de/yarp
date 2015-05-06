@@ -12,13 +12,11 @@
 #include <yarp/dev/DeviceDriver.h>
 #include <yarp/dev/SerialInterfaces.h>
 #include <yarp/os/Bottle.h>
-#include <yarp/os/Mutex.h>
-#include <yarp/os/Semaphore.h>
-
 
 #include <ace/DEV_Connector.h>
 #include <ace/TTY_IO.h>
 #include <ace/OS_NS_stdio.h>
+#include <ace/Condition_Thread_Mutex.h>
 
 namespace yarp {
     namespace dev {
@@ -88,10 +86,12 @@ private:
     ACE_Time_Value receiveTimeout;
     bool verbose;     // If enabled (1), the data sent/received by the serial device is print on screen
     bool deviceOpened;
+    
+    ACE_Thread_Mutex conditionMutex;
+    ACE_Condition_Thread_Mutex stopCondition;
     bool shouldStop;
     bool stopAck;
-    yarp::os::Mutex synchronizationMutex;
-    yarp::os::Semaphore haltCondition;
+
 
 public:
     SerialDeviceDriver();
