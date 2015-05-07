@@ -19,8 +19,9 @@ using namespace yarp::dev;
 //inline SerialHandler& RES(void *res) { return *(SerialHandler *)res; }
 
 SerialDeviceDriver::SerialDeviceDriver() :
-deviceOpened(false), stopCondition(conditionMutex),
-shouldStop(false), stopAck(false) {
+deviceOpened(false)//, stopCondition(conditionMutex),
+//shouldStop(false), stopAck(false)
+ {
     //system_resources = (SerialHandler*) new SerialHandler();
     verbose=false;
 }
@@ -44,10 +45,22 @@ bool SerialDeviceDriver::open(SerialDeviceDriverSettings& config)
         ACE_OS::printf("Invalid communications port in %s \n", config.CommChannel);
         return false;
     }
-    
-    
+
+    if(_serialConnector.connect(_send_serial_dev, ACE_DEV_Addr(config.CommChannel)) == -1)
+    {
+        ACE_OS::printf("Invalid communications port in %s \n", config.CommChannel);
+        return false;
+    }
+
     // Set TTY_IO parameter into the ACE_TTY_IO device(_serial_dev)
     if (_serial_dev.control (ACE_TTY_IO::SETPARAMS, &config.SerialParams) == -1)
+    {
+        ACE_OS::printf("Can not control communications port %s \n", config.CommChannel);
+        return false;
+    }
+
+    // Set TTY_IO parameter into the ACE_TTY_IO device(_serial_dev)
+    if (_send_serial_dev.control (ACE_TTY_IO::SETPARAMS, &config.SerialParams) == -1)
     {
         ACE_OS::printf("Can not control communications port %s \n", config.CommChannel);
         return false;
@@ -87,18 +100,18 @@ bool SerialDeviceDriver::open(yarp::os::Searchable& config) {
 bool SerialDeviceDriver::close(void) {
     if (!deviceOpened) return true;
     
-    printf("SerialDeviceDriver Close\n");
-    stopAck = false;
+    // stopAck = false;
     
-    conditionMutex.lock();
-    shouldStop = true;
-    while(!stopAck) {
-        stopCondition.wait();
-    }
-    conditionMutex.release();
+    // conditionMutex.lock();
+    // shouldStop = true;
+    // while(!stopAck) {
+    //     stopCondition.wait();
+    // }
+    // conditionMutex.release();
     
     _serial_dev.close();
-    printf("SerialDeviceDriver Closed\n");
+    _send_serial_dev.close();
+
     deviceOpened = false;
     return true;
 }
@@ -117,9 +130,8 @@ bool SerialDeviceDriver::send(const Bottle& msg)
             }
             
             // Write message to the serial device
-            
-            ssize_t bytes_written = _serial_dev.send_n((void *) msg.get(0).asString().c_str(), message_size);
-            
+            ssize_t bytes_written = _send_serial_dev.send_n((void *) msg.get(0).asString().c_str(), message_size);
+
             if (bytes_written == -1) {
                 ACE_ERROR((LM_ERROR, ACE_TEXT ("%p\n"), ACE_TEXT ("send")));
                 return false;
@@ -147,7 +159,7 @@ bool SerialDeviceDriver::send(char *msg, size_t size)
         }
         
         // Write message in the serial device
-        ssize_t bytes_written = _serial_dev.send_n((void *)msg, size);
+        ssize_t bytes_written = _send_serial_dev.send_n((void *)msg, size);
         
         if (bytes_written == -1) {
             ACE_ERROR((LM_ERROR, ACE_TEXT ("%p\n"), ACE_TEXT ("send")));
@@ -225,18 +237,23 @@ bool SerialDeviceDriver::receive(Bottle& msg)
     const int msgSize = 1001;
     char message[1001];
     
+
+
     //reading from socket.
     ssize_t bytes_read = _serial_dev.recv ((void *) message, msgSize - 1);
     
-    conditionMutex.lock();
+   /* conditionMutex.lock();
     if (shouldStop) {
         stopAck = true;
         stopCondition.signal();
     }
     conditionMutex.release();
-    if (shouldStop) return true;
-    
-    if (bytes_read == -1 && errno != ETIME) {
+    if (shouldStop) return true;*/
+
+    if (bytes_read == -1) {
+        if (errno == EWOULDBLOCK || errno == EAGAIN)
+            return true;
+
         ACE_ERROR((LM_ERROR, ACE_TEXT ("Error in SerialDeviceDriver::receive(). \n")));
         return false;
     }

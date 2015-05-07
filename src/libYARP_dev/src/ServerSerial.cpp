@@ -27,11 +27,11 @@ bool ServerSerial::closeMain()
     if (isRunning()) {
         askToStop();
     }
-
     //close the port connection here
     toDevice.close();
     fromDevice.close();
     poly.close();
+
     return true;
 }
 
