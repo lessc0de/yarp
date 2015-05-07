@@ -83,7 +83,7 @@ private:
 
     ACE_TTY_IO _serial_dev;
     ACE_DEV_Connector _serialConnector;
-    ACE_Time_Value receiveTimeout;
+
     bool verbose;     // If enabled (1), the data sent/received by the serial device is print on screen
     bool deviceOpened;
     
