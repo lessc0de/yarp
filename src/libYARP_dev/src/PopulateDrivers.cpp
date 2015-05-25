@@ -75,11 +75,11 @@ void Drivers::init() {
                                                     "yarp::dev::DeviceGroup"));
 
     add(createServerInertial());
+    add(createControlBoardWrapper());
     add(createRemoteControlBoard());
-    add(createServerControlBoard());
-    add(createClientControlBoard());
     add(createAnalogSensorClient());
     add(createAnalogWrapper());
-    add(createControlBoardWrapper());
     add(createVirtualAnalogWrapper());
+    add(createClientControlBoard());
+    add(createServerControlBoard());
 }
